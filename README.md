@@ -2,7 +2,7 @@
 
 ## Requirements
 
-- Node.js > 8.4.0
+- Node.js >= 8.4.0
 
 ## Run
 
