@@ -7,8 +7,16 @@
 ## Run
 
 ```sh
-node --expose-http2 app.js
+npm start
 ```
+
+or
+
+```sh
+node --expose-http2 index.js
+```
+
+Open: https://localhost:3000
 
 ## Result
 
