@@ -13,8 +13,7 @@ const PUBLIC_PATH = path.join(__dirname, '../public')
 const publicFiles = helper.getFiles(PUBLIC_PATH)
 const server = http2.createSecureServer({
   cert: fs.readFileSync(path.join(__dirname, '../ssl/cert.pem')),
-  key: fs.readFileSync(path.join(__dirname, '../ssl/key.pem')),
-  allowHTTP1: true
+  key: fs.readFileSync(path.join(__dirname, '../ssl/key.pem'))
 }, onRequest)
 
 // Push file
@@ -42,21 +41,14 @@ function onRequest (req, res) {
     return
   }
 
-  // HTTP/2
-  if (req.httpVersion === '2.0') {
-    if (reqPath === '/index.html') {
-      push(res.stream, '/bundle1.js')
-      push(res.stream, '/bundle2.js')
-    }
-
-    res.stream.respondWithFD(file.fileDescriptor, file.headers)
-    return
+  // Push with index.html
+  if (reqPath === '/index.html') {
+    push(res.stream, '/bundle1.js')
+    push(res.stream, '/bundle2.js')
   }
 
-  // HTTP/1
-  res.writeHead(200, file.headers)
-  res.write(file.fileDescriptor, 'binary')
-  res.end()
+  // Serve file
+  res.stream.respondWithFD(file.fileDescriptor, file.headers)
 }
 
 server.listen(PORT, (err) => {
