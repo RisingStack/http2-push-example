@@ -16,6 +16,7 @@ const server = http2.createSecureServer({
   key: fs.readFileSync(path.join(__dirname, '../ssl/key.pem'))
 }, onRequest)
 
+const INDEX = '/index.html'
 // Push file
 function push (stream, path) {
   const file = publicFiles.get(path)
@@ -29,20 +30,25 @@ function push (stream, path) {
   })
 }
 
+const getPath = (req) => 
+  ( req.headers && req.headers[":path"] )
+    ? req.headers[":path"]
+    : req.path || INDEX
+
+const getView = (path) => (path === '/') ? INDEX : path
 // Request handler
 function onRequest (req, res) {
-  const reqPath = req.path === '/' ? '/index.html' : req.path
+  const reqPath = getView(getPath(req))
   const file = publicFiles.get(reqPath)
-
+  
   // File not found
   if (!file) {
     res.statusCode = 404
-    res.end()
-    return
+    return res.end()
   }
 
   // Push with index.html
-  if (reqPath === '/index.html') {
+  if (reqPath === INDEX) {
     push(res.stream, '/bundle1.js')
     push(res.stream, '/bundle2.js')
   }
@@ -51,11 +57,8 @@ function onRequest (req, res) {
   res.stream.respondWithFD(file.fileDescriptor, file.headers)
 }
 
-server.listen(PORT, (err) => {
-  if (err) {
-    console.error(err)
-    return
-  }
-
-  console.log(`Server listening on ${PORT}`)
-})
+server.listen(PORT, (err) => 
+  (err) 
+    ? console.error(err)
+    : console.log(`Server listening on ${PORT}`)
+)
