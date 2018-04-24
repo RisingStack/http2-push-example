@@ -31,7 +31,7 @@ function push (stream, path) {
 
 // Request handler
 function onRequest (req, res) {
-  const reqPath = req.path === '/' ? '/index.html' : req.path
+  const reqPath = req.url === '/' ? '/index.html' : req.url
   const file = publicFiles.get(reqPath)
 
   // File not found
