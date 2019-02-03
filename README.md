@@ -4,7 +4,7 @@ Blog post: [HTTP/2 Server Push with Node.js](https://blog.risingstack.com/node-j
 
 ## Requirements
 
-- Node.js >= 8.4.0
+- Node.js >= 9.4.0
 
 ## Run
 
