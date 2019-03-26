@@ -14,25 +14,32 @@ const publicFiles = helper.getFiles(PUBLIC_PATH)
 const server = http2.createSecureServer({
   cert: fs.readFileSync(path.join(__dirname, '../ssl/cert.pem')),
   key: fs.readFileSync(path.join(__dirname, '../ssl/key.pem'))
-}, onRequest)
+}, onRequest);
+
 
 // Push file
-function push (stream, path) {
+function push(stream, path, forPath) {
   const file = publicFiles.get(path)
 
   if (!file) {
     return
   }
 
-  stream.pushStream({ [HTTP2_HEADER_PATH]: path }, (pushStream) => {
-    pushStream.respondWithFD(file.fileDescriptor, file.headers)
+  console.log('push: ', path, 'for: ', forPath);
+  stream.pushStream({ [HTTP2_HEADER_PATH]: path }, (err, pushStream) => {
+    if (err) {
+      console.error(err)
+      return
+    }
+    pushStream.respondWithFD(file.fileDescriptor, file.headers);
   })
 }
 
 // Request handler
-function onRequest (req, res) {
-  const reqPath = req.url === '/' ? '/index.html' : req.url
-  const file = publicFiles.get(reqPath)
+function onRequest(req, res) {
+  const reqPath = req.url === '/' ? '/index.html' : req.url;
+  const file = publicFiles.get(reqPath);
+  console.log('onRequest: ', req.url, reqPath);
 
   // File not found
   if (!file) {
@@ -41,10 +48,9 @@ function onRequest (req, res) {
     return
   }
 
-  // Push with index.html
-  if (reqPath === '/index.html') {
-    push(res.stream, '/bundle1.js')
-    push(res.stream, '/bundle2.js')
+  // Push bundle2 with bundle1.
+  if (reqPath === '/bundle1.js') {
+    push(res.stream, '/bundle2.js', reqPath)
   }
 
   // Serve file
