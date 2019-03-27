@@ -17,7 +17,15 @@ const server = http2.createSecureServer({
 }, onRequest);
 
 
-// Push file
+const METADATA = {
+  '/bundle1.js': [
+    {path: '/bundle2.js'},
+    {path: '/bundle3.js'},
+  ],
+};
+
+
+// Push file.
 function push(stream, path, forPath) {
   const file = publicFiles.get(path)
 
@@ -35,26 +43,51 @@ function push(stream, path, forPath) {
   })
 }
 
-// Request handler
+
+// Link file.
+function link(res, path, forPath, headers) {
+  console.log('link: ', path, 'for: ', forPath);
+  if (!headers['Link']) {
+    headers['Link'] = [];
+  }
+  headers['Link'].push(`<${path}>; rel=preload; as=script`);
+}
+
+
+// Request handler.
 function onRequest(req, res) {
-  const reqPath = req.url === '/' ? '/index.html' : req.url;
-  const file = publicFiles.get(reqPath);
-  console.log('onRequest: ', req.url, reqPath);
+  const [reqPath, query] = req.url.split('?');
+  const filePath = reqPath == '/' ? '/index.html' : reqPath;
+  console.log('onRequest: ', req.url, reqPath, query);
+  const file = publicFiles.get(filePath);
 
   // File not found
   if (!file) {
-    res.statusCode = 404
-    res.end()
-    return
+    console.log('404 ', reqPath);
+    res.statusCode = 404;
+    res.end();
+    return;
   }
 
-  // Push bundle2 with bundle1.
-  if (reqPath === '/bundle1.js') {
-    push(res.stream, '/bundle2.js', reqPath)
+  // Push or link if needed.
+  const headers = {};
+  const metadata = METADATA[reqPath];
+  if (metadata) {
+    if (query == 'push') {
+      metadata.forEach(r => {
+        push(res.stream, r.path, reqPath, headers);
+      });
+    } else if (query == 'link') {
+      metadata.forEach(r => {
+        link(res, r.path, reqPath, headers);
+      });
+    }
   }
 
   // Serve file
-  res.stream.respondWithFD(file.fileDescriptor, file.headers)
+  res.stream.respondWithFD(
+      file.fileDescriptor,
+      Object.assign(headers, file.headers));
 }
 
 server.listen(PORT, (err) => {
